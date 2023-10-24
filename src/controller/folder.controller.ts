@@ -65,3 +65,29 @@ const populateChildren = async (folders: any) => {
         }
     }
 };
+
+
+export const DeleteFolder = async (req: Request, res: Response) => {
+    try {
+      const { parentId, currentId } = req.body;
+  
+      const parentUpdate = await Folder.updateOne(
+        { _id: parentId },
+        { $pull: { children: currentId } }
+      )
+  
+      if(parentUpdate.modifiedCount){
+        let deleted =await Folder.findByIdAndDelete(currentId)
+  
+        return res.json({
+          message:deleted 
+        })
+      }
+  res.json({
+    message: 'operation failed'
+  })
+     
+    } catch (error: any) {
+      res.status(500).json({ message: 'Server error', error: error.message });
+    }
+  }
