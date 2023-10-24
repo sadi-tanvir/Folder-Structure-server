@@ -26,11 +26,42 @@ export const CreateFolder = async (req: Request, res: Response) => {
             }
         }
 
-        
+
         res.status(201).json({
             folder: result
         });
     } catch (error) {
         res.status(500).json({ error });
+    }
+};
+
+
+
+// get all folders from database 
+export const GetFolders = async (req: Request, res: Response) => {
+    try {
+        const rootFolders = await Folder.find({ children: { $exists: true } });
+
+        if (rootFolders.length === 0) {
+            return res.status(200).json([]);
+        }
+
+        await populateChildren(rootFolders);
+
+        res.status(200).json({
+            rootFolders: rootFolders[0]
+        });
+    } catch (error: any) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+const populateChildren = async (folders: any) => {
+    await Folder.populate(folders, { path: 'children' });
+
+    for (const folder of folders) {
+        if (folder.children.length > 0) {
+            await populateChildren(folder.children);
+        }
     }
 };

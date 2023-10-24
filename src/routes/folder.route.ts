@@ -1,8 +1,13 @@
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 const router = Router();
-import { CreateFolder } from "../controller/folder.controller";
+import { CreateFolder, GetFolders } from "../controller/folder.controller";
+import Folder from "../models/Folder";
 
-// // create new folder
+// create a new folder
 router.post('/create', CreateFolder);
+
+
+// get all folders from database
+router.get('/folders', GetFolders)
 
 export default router;
