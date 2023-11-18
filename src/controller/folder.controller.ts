@@ -39,7 +39,18 @@ export const CreateFolder = async (req: Request, res: Response) => {
 
 
 
+
 // get all folders from database 
+const populateChildren = async (folders: any) => {
+    await Folder.populate(folders, { path: 'children' });
+
+    for (const folder of folders) {
+        if (folder.children.length > 0) {
+            await populateChildren(folder.children);
+        }
+    }
+};
+
 export const GetFolders = async (req: Request, res: Response) => {
     try {
         const rootFolders = await Folder.find({ name: 'root' });
@@ -54,35 +65,49 @@ export const GetFolders = async (req: Request, res: Response) => {
     }
 };
 
-const populateChildren = async (folders: any) => {
-    await Folder.populate(folders, { path: 'children' });
 
-    for (const folder of folders) {
-        if (folder.children.length > 0) {
-            await populateChildren(folder.children);
+
+
+
+// delete folder
+const deleteFolderAndChildren = async (folder: any) => {
+    // Recursively delete children
+    for (const childId of folder.children) {
+        const childFolder = await Folder.findById(childId);
+        if (childFolder) {
+            await deleteFolderAndChildren(childFolder);
         }
     }
+
+    // Remove the folder from its parent's children array
+    if (folder.parentId) {
+        const parentFolder = await Folder.findById(folder.parentId);
+        if (parentFolder) {
+            parentFolder.children = parentFolder.children.filter(childId => childId.toString() !== folder._id.toString());
+            await parentFolder.save();
+        }
+    }
+
+    // Delete the folder
+    await folder.deleteOne();
 };
 
-
-
-// Delete Folder
 export const DeleteFolder = async (req: Request, res: Response) => {
     try {
-        const { parentId, currentId } = req.body;
+        const { currentId } = req.body;
 
-        const parentUpdate = await Folder.updateOne(
-            { _id: parentId },
-            { $pull: { children: currentId } }
-        );
+        // Find the folder to be deleted
+        const folderToDelete = await Folder.findById(currentId);
 
-        if (parentUpdate.modifiedCount) {
-            let deleted = await Folder.findByIdAndDelete(currentId)
+        if (!folderToDelete) {
+            return res.status(404).json({
+                message: "Folder not found"
+            });
+        }
 
-            return res.json({
-                message: deleted
-            })
-        };
+        // Recursively delete the folder and its children
+        await deleteFolderAndChildren(folderToDelete);
+
         res.json({
             message: 'operation failed'
         });
