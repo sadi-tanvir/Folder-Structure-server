@@ -1,6 +1,8 @@
 import { Request, Response } from "express";
 import Folder from "../models/Folder";
 
+
+// Create Folder
 export const CreateFolder = async (req: Request, res: Response) => {
     try {
         const { name, parentId } = req.body;
@@ -40,11 +42,7 @@ export const CreateFolder = async (req: Request, res: Response) => {
 // get all folders from database 
 export const GetFolders = async (req: Request, res: Response) => {
     try {
-        const rootFolders = await Folder.find({ children: { $exists: true } });
-
-        if (rootFolders.length === 0) {
-            return res.status(200).json([]);
-        }
+        const rootFolders = await Folder.find({ name: 'root' });
 
         await populateChildren(rootFolders);
 
@@ -67,27 +65,29 @@ const populateChildren = async (folders: any) => {
 };
 
 
+
+// Delete Folder
 export const DeleteFolder = async (req: Request, res: Response) => {
     try {
-      const { parentId, currentId } = req.body;
-  
-      const parentUpdate = await Folder.updateOne(
-        { _id: parentId },
-        { $pull: { children: currentId } }
-      )
-  
-      if(parentUpdate.modifiedCount){
-        let deleted =await Folder.findByIdAndDelete(currentId)
-  
-        return res.json({
-          message:deleted 
-        })
-      }
-  res.json({
-    message: 'operation failed'
-  })
-     
+        const { parentId, currentId } = req.body;
+
+        const parentUpdate = await Folder.updateOne(
+            { _id: parentId },
+            { $pull: { children: currentId } }
+        );
+
+        if (parentUpdate.modifiedCount) {
+            let deleted = await Folder.findByIdAndDelete(currentId)
+
+            return res.json({
+                message: deleted
+            })
+        };
+        res.json({
+            message: 'operation failed'
+        });
+
     } catch (error: any) {
-      res.status(500).json({ message: 'Server error', error: error.message });
-    }
-  }
+        res.status(500).json({ message: 'Server error', error: error.message });
+    };
+};
