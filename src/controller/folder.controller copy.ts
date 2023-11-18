@@ -67,7 +67,7 @@ export const GetFolders = async (req: Request, res: Response) => {
 
 
 
-let count = 0;
+
 
 // delete folders
 const deleteFolderAndChildren = async (folder: any) => {
@@ -81,7 +81,6 @@ const deleteFolderAndChildren = async (folder: any) => {
 
     // Remove the folder from its parent's children array
     await Folder.findOneAndUpdate({ _id: folder.parentId }, { $pull: { children: folder._id } });
-    console.log(count++, folder);
 
     // Delete the folder
     await folder.deleteOne();
